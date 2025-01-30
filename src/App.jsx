@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Search from './components/Search.jsx'
 import Spinner from './components/Spinner.jsx';
 import MovieCard from './components/MovieCard.jsx';
+import { useDebounce } from 'use-debounce'; 
 
 const API_BASE_URL = "https://api.themoviedb.org/3"; 
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY; 
@@ -19,12 +20,15 @@ function App() {
   const [errorMessage, setErrorMessage] = useState('');
   const [movieList, setMovieList] = useState([]);
   const [isloading, setIsLoading] = useState(false);
+  const [debounceSearchTerm] = useDebounce(searchTerm, 500);
 
-  const fetchMovie = async () => {
+  const fetchMovie = async (query = '') => {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const endpoint = `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`;
+      const endpoint = query 
+      ? `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}`
+      : `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`;
 
       const response = await fetch(endpoint, API_OPTIONS);
 
@@ -40,7 +44,7 @@ function App() {
         setMovieList([]);
         return;
       } 
-      setMovieList(data.results || []);
+      setMovieList(data.results || []); 
     
     } catch (error) {
       console.log(`Error Fetching Movie: ${error}`);
@@ -51,8 +55,8 @@ function App() {
   };
 
   useEffect(() => {
-    fetchMovie();
-  }, []);
+    fetchMovie(debounceSearchTerm);
+  }, [debounceSearchTerm]);
 
   return (
     <main className='overflow-x-hidden'>
